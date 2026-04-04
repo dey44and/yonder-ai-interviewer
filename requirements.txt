@@ -1,3 +1,6 @@
 langchain
 langchain-openai
 fastapi
+dataclasses-json
+uvicorn
+jinja2
