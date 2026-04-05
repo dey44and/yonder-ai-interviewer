@@ -1,6 +1,8 @@
 langchain
 langchain-openai
-fastapi
+# fastapi
 dataclasses-json
-uvicorn
-jinja2
+# uvicorn
+# jinja2
+transformers
+torch
