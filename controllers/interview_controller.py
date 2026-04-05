@@ -20,7 +20,7 @@ class InterviewController:
         self.textanalysis_service: TextAnalysisService = TextAnalysisService()
 
     def _print_agent_response(self, response: ResponseFormat) -> None:
-        print(f"Agent: {response.response}")
+        print(f"\nAgent: {response.response}")
         if response.summary:
             print("\nSummary:")
             print(response.summary)
