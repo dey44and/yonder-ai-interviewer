@@ -1,9 +1,10 @@
 langchain
 langchain-openai
 langgraph-checkpoint-sqlite
-# fastapi
+fastapi
 dataclasses-json
-# uvicorn
-# jinja2
+uvicorn
+jinja2
 transformers
 torch
+python-multipart
