@@ -18,7 +18,7 @@ class AgentService:
     ):
         thread_id = user_id or str(uuid.uuid4())
         chat_model = init_chat_model(model, temperature=temperature)
-        sqlite_conn = sqlite3.connect("checkpoint.db", check_same_thread=False)
+        sqlite_conn = sqlite3.connect(".agent_checkpoint.db", check_same_thread=False)
         serde = JsonPlusSerializer(allowed_msgpack_modules=[ResponseFormat])
 
         self.context = Context(user_id=thread_id)
