@@ -101,6 +101,7 @@ async def post_chat(
             "role": "user",
             "timestamp": datetime.now(tz=timezone.utc).isoformat(),
             "message": prompt,
+            "interview_completed": False,
         }
         yield json.dumps(question).encode("utf-8") + b"\n"
         await database.add_message(session_id, json.dumps(question))

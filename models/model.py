@@ -30,3 +30,4 @@ class ChatMessage(TypedDict):
     role: Literal["user", "model"]
     timestamp: str
     message: str
+    interview_completed: bool

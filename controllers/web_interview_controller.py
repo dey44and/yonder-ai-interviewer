@@ -16,6 +16,8 @@ class States(Enum):
 
 
 class WebInterviewController:
+    """Interview controller for web app."""
+
     def __init__(self):
         self._user_id = str(uuid.uuid4())
         self.agent_service: AgentService = AgentService(user_id=self._user_id)
@@ -72,6 +74,7 @@ class WebInterviewController:
             "role": "model",
             "message": response.response,
             "timestamp": datetime.now().isoformat(),
+            "interview_completed": False,
         }
 
     def run_active(self, message: str) -> Dict[str, str]:
@@ -112,6 +115,7 @@ class WebInterviewController:
             "role": "model",
             "message": message,
             "timestamp": datetime.now().isoformat(),
+            "interview_completed": self.state == States.COMPLETED,
         }
 
     def run_completed(self, message: str) -> Dict[str, str]:
@@ -130,9 +134,10 @@ class WebInterviewController:
             }
         """
         return {
-            "role": "completed",
-            "message": message,
+            "role": "model",
+            "message": "The interview has already been completed.",
             "timestamp": datetime.now().isoformat(),
+            "interview_completed": True,
         }
 
     def run(self, message: str):

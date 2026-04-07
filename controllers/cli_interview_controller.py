@@ -15,6 +15,8 @@ TOPICS = [
 
 
 class CLIInterviewController:
+    """Interview controller for CLI app."""
+
     def __init__(self):
         self.user_id = str(uuid.uuid4())
         self.agent_service: AgentService = AgentService(user_id=self.user_id)

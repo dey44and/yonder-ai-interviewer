@@ -12,6 +12,7 @@ const topicSelect = topicForm.querySelector('select') as HTMLSelectElement
 const sendButton = document.getElementById('send-button') as HTMLButtonElement
 
 let sessionId: string | null = localStorage.getItem('session_id')
+let interviewCompleted = false
 
 // The format of messages, this matches pydantic-ai both for brevity and understanding
 // in production, you might not want to keep this format all the way to the frontend
@@ -19,6 +20,7 @@ interface Message {
   role: string
   message: string
   timestamp: string
+  interview_completed: boolean
 }
 
 // stream the response and render messages as each chunk is received
@@ -38,8 +40,11 @@ async function onFetchResponse(response: Response): Promise<void> {
       spinner.classList.remove('active')
     }
     addMessages(text)
-    promptInput.disabled = false
-    promptInput.focus()
+    if (!interviewCompleted) {
+      promptInput.disabled = false
+      sendButton.disabled = false
+      promptInput.focus()
+    }
   } else {
     const text = await response.text()
     console.error(`Unexpected response: ${response.status}`, {response, text})
@@ -56,8 +61,9 @@ function addMessages(responseText: string) {
   const messages: Message[] = lines.filter(line => line.length > 1).map(j => JSON.parse(j))
   for (const msg of messages) {
     // we use the timestamp as a crude element id
-    const {timestamp, role, message} = msg
-    if (role == "completed") {
+    const {timestamp, role, message, interview_completed} = msg
+    if (interview_completed) {
+      interviewCompleted = true
       promptInput.disabled = true
       sendButton.disabled = true
     }
@@ -102,10 +108,12 @@ async function onTopicSubmit(e: SubmitEvent) : Promise<void> {
 
       const data = await response.json()
       sessionId = data.session_id
+      interviewCompleted = false
       localStorage.setItem('session_id', sessionId)
 
       addMessages(JSON.stringify(data.message) + '\n')
       promptInput.disabled = false
+      sendButton.disabled = false
       promptInput.focus()
   } finally {
       spinner?.classList.remove('active')
