@@ -1,0 +1,160 @@
+// WARNING: to avoid the complexity of npm, this typescript is compiled in the browser
+// there's currently no static type checking
+
+import { marked } from 'https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.0/lib/marked.esm.js'
+
+const convElement = document.getElementById('conversation')
+const promptInput = document.getElementById('prompt-input') as HTMLInputElement
+const spinner = document.getElementById('spinner')
+const topicForm = document.getElementById('topic-form') as HTMLFormElement
+const chatForm = document.getElementById('chat-form') as HTMLFormElement
+const topicSelect = topicForm.querySelector('select') as HTMLSelectElement
+const sendButton = document.getElementById('send-button') as HTMLButtonElement
+
+let sessionId: string | null = localStorage.getItem('session_id')
+let interviewCompleted = false
+
+// The format of messages, this matches pydantic-ai both for brevity and understanding
+// in production, you might not want to keep this format all the way to the frontend
+interface Message {
+  role: string
+  message: string
+  timestamp: string
+  interview_completed: boolean
+}
+
+// stream the response and render messages as each chunk is received
+// data is sent as newline-delimited JSON
+async function onFetchResponse(response: Response): Promise<void> {
+  let text = ''
+  let decoder = new TextDecoder()
+  if (response.ok) {
+    const reader = response.body.getReader()
+    while (true) {
+      const {done, value} = await reader.read()
+      if (done) {
+        break
+      }
+      text += decoder.decode(value)
+      addMessages(text)
+      spinner.classList.remove('active')
+    }
+    addMessages(text)
+    if (!interviewCompleted) {
+      promptInput.disabled = false
+      sendButton.disabled = false
+      promptInput.focus()
+    }
+  } else {
+    const text = await response.text()
+    console.error(`Unexpected response: ${response.status}`, {response, text})
+    throw new Error(`Unexpected response: ${response.status}`)
+  }
+}
+
+// take raw response text and render messages into the `#conversation` element
+// Message timestamp is assumed to be a unique identifier of a message, and is used to deduplicate
+// hence you can send data about the same message multiple times, and it will be updated
+// instead of creating a new message elements
+function addMessages(responseText: string) {
+  const lines = responseText.split('\n')
+  const messages: Message[] = lines.filter(line => line.length > 1).map(j => JSON.parse(j))
+  for (const msg of messages) {
+    // we use the timestamp as a crude element id
+    const {timestamp, role, message, interview_completed} = msg
+    if (interview_completed) {
+      interviewCompleted = true
+      promptInput.disabled = true
+      sendButton.disabled = true
+    }
+    const id = `msg-${timestamp}`
+    let msgDiv = document.getElementById(id)
+    if (!msgDiv) {
+      msgDiv = document.createElement('div')
+      msgDiv.id = id
+      msgDiv.title = `${role} at ${timestamp}`
+      msgDiv.classList.add('border-top', 'pt-2', role)
+      convElement.appendChild(msgDiv)
+    }
+    msgDiv.innerHTML = marked.parse(message)
+  }
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+}
+
+function onError(error: any) {
+  console.error(error)
+  document.getElementById('error')?.classList.remove('d-none')
+  spinner?.classList.remove('active')
+}
+
+async function onTopicSubmit(e: SubmitEvent) : Promise<void> {
+  e.preventDefault()
+  spinner?.classList.add('active')
+
+  const topic = topicSelect.value
+
+  try {
+      const response = await fetch('/interview/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ topic })
+      })
+
+      if(!response.ok) {
+        throw new Error(`Unexpected response: ${response.status}`)
+      }
+
+      const data = await response.json()
+      sessionId = data.session_id
+      interviewCompleted = false
+      localStorage.setItem('session_id', sessionId)
+
+      addMessages(JSON.stringify(data.message) + '\n')
+      promptInput.disabled = false
+      sendButton.disabled = false
+      promptInput.focus()
+  } finally {
+      spinner?.classList.remove('active')
+  }
+}
+
+async function onMessageSubmit(e: SubmitEvent): Promise<void> {
+  e.preventDefault()
+
+  if (!sessionId) {
+    throw new Error('No active interview session. Start the interview first.')
+  }
+
+  const prompt = promptInput.value.trim()
+  if (!prompt) {
+    return
+  }
+
+  spinner.classList.add('active')
+  const body = new FormData()
+  body.append('prompt', prompt)
+
+  promptInput.value = ''
+  promptInput.disabled = true
+
+  try {
+    const response = await fetch(`/interview/${sessionId}/message`, {
+      method: 'POST',
+      body,
+    })
+    await onFetchResponse(response)
+  } finally {
+    spinner?.classList.remove('active')
+  }
+}
+
+// call the methods when a specific button is clicked
+topicForm.addEventListener('submit', (e) => onTopicSubmit(e).catch(onError))
+chatForm.addEventListener('submit', (e) => onMessageSubmit(e).catch(onError))
+
+// load messages on page load
+if (sessionId) {
+  fetch(`/interview/${sessionId}`).then(onFetchResponse).catch(onError)
+}
