@@ -201,6 +201,17 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local app artifacts and secrets
+API_KEY
+results/
+data/
+.agent_checkpoint.db
+.agent_checkpoint.db-shm
+.agent_checkpoint.db-wal
+persistence/.chat_app_messages.sqlite
+persistence/.chat_app_messages.sqlite-*
+.DS_Store
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

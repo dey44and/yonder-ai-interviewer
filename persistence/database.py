@@ -1,8 +1,9 @@
 from __future__ import annotations as _annotations
 
 import asyncio
-import sqlite3
 import json
+import os
+import sqlite3
 
 from dataclasses import dataclass
 from collections.abc import AsyncIterator, Callable
@@ -15,6 +16,7 @@ from pathlib import Path
 from models.model import ChatMessage
 
 THIS_DIR = Path(__file__).parent
+DEFAULT_DB_PATH = THIS_DIR / ".chat_app_messages.sqlite"
 
 
 P = ParamSpec("P")
@@ -37,11 +39,12 @@ class Database:
     @classmethod
     @asynccontextmanager
     async def connect(
-        cls, file: Path = THIS_DIR / ".chat_app_messages.sqlite"
+        cls, file: Path | None = None
     ) -> AsyncIterator[Database]:
+        db_file = file or Path(os.environ.get("CHAT_APP_DB", str(DEFAULT_DB_PATH)))
         loop = asyncio.get_event_loop()
         executor = ThreadPoolExecutor(max_workers=1)
-        con = await loop.run_in_executor(executor, cls._connect, file)
+        con = await loop.run_in_executor(executor, cls._connect, db_file)
         slf = cls(con, loop, executor)
         try:
             yield slf

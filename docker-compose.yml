@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    container_name: yonder-ai-interviewer-web
+    command: uvicorn chat_app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CHAT_APP_DB: /app/data/chat_app_messages.sqlite
+      AGENT_CHECKPOINT_DB: /app/data/agent_checkpoint.db
+    volumes:
+      - ./results:/app/results
+      - ./data:/app/data
+
+  cli:
+    build: .
+    container_name: yonder-ai-interviewer-cli
+    command: python cli_app.py
+    stdin_open: true
+    tty: true
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AGENT_CHECKPOINT_DB: /app/data/agent_checkpoint.db
+    volumes:
+      - ./results:/app/results
+      - ./data:/app/data

@@ -2,7 +2,6 @@ import uuid
 
 from models.model import ResponseFormat
 from services.agent_service import AgentService
-from services.textanalysis_service import TextAnalysisService
 from services.transcript_service import TranscriptService
 from datetime import datetime
 
