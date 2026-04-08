@@ -1,5 +1,7 @@
 """
 Simple chat app example build with FastAPI.
+
+Reference implementation: https://ai.pydantic.dev/examples/chat-app/#example-code
 """
 
 from __future__ import annotations as _annotations

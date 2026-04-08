@@ -38,9 +38,7 @@ class Database:
 
     @classmethod
     @asynccontextmanager
-    async def connect(
-        cls, file: Path | None = None
-    ) -> AsyncIterator[Database]:
+    async def connect(cls, file: Path | None = None) -> AsyncIterator[Database]:
         db_file = file or Path(os.environ.get("CHAT_APP_DB", str(DEFAULT_DB_PATH)))
         loop = asyncio.get_event_loop()
         executor = ThreadPoolExecutor(max_workers=1)
